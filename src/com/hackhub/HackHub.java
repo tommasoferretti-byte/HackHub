@@ -189,4 +189,38 @@ class Team {
 
 
 
+interface StatoInvito {
+    String nome();
+    void accetta(Invito invito);
+    void rifiuta(Invito invito);
+}
+
+
+class InAttesaStato implements StatoInvito {
+    public String nome() { return "IN_ATTESA"; }
+    public void accetta(Invito invito) { invito.setStato(new AccettatoStato()); }
+    public void rifiuta(Invito invito) { invito.setStato(new RifiutatoStato()); }
+}
+
+
+class AccettatoStato implements StatoInvito {
+    public String nome() { return "ACCETTATO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito gia' accettato"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito gia' accettato"); }
+}
+
+class RifiutatoStato implements StatoInvito {
+    public String nome() { return "RIFIUTATO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito gia' rifiutato"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito gia' rifiutato"); }
+}
+
+class ScadutoStato implements StatoInvito {
+    public String nome() { return "SCADUTO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito scaduto"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito scaduto"); }
+}
+
+
+
 
