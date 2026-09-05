@@ -42,6 +42,51 @@ enum StatoTeam { ATTIVO, COMPLETO, ELIMINATO }
 
 
 
+class Utente {
+    private UUID idUtente = UUID.randomUUID();
+    private String username;
+    private String email;
+    private String passwordHash;
+    private String nome;
+    private String cognome;
+    private LocalDate dataRegistrazione = LocalDate.now();
+    private RuoloUtente ruolo = RuoloUtente.UTENTE;
+
+    private Team team;
+
+    private final List<Invito> invitiRicevuti = new ArrayList<>();
+
+    protected Utente() { }
+
+    Utente(String username, String email, String passwordHash, String nome, String cognome) {
+        this.username = username;
+        this.email = email;
+        this.passwordHash = passwordHash;
+        this.nome = nome;
+        this.cognome = cognome;
+    }
+
+    boolean isLibero() { return team == null; }
+    boolean appartieneATeam() { return team != null; }
+
+    List<Invito> visualizzaInvitiRicevuti() { return List.copyOf(invitiRicevuti); }
+    void aggiungiInvitoRicevuto(Invito invito) { invitiRicevuti.add(invito); }
+
+    UUID getIdUtente() { return idUtente; }
+    String getUsername() { return username; }
+    String getEmail() { return email; }
+    String getNome() { return nome; }
+    String getCognome() { return cognome; }
+    LocalDate getDataRegistrazione() { return dataRegistrazione; }
+    RuoloUtente getRuolo() { return ruolo; }
+    void setRuolo(RuoloUtente ruolo) { this.ruolo = ruolo; }
+    Team getTeam() { return team; }
+    void setTeam(Team team) { this.team = team; }
+
+    @Override public String toString() { return username; }
+}
+
+
 
 
 
