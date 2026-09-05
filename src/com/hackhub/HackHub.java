@@ -121,5 +121,72 @@ class Mentore extends MembroDelloStaff {
 
 
 
+class Team {
+    private UUID idTeam = UUID.randomUUID();
+    private String nomeTeam;
+    private String descrizione;
+    private LocalDate dataCreazione = LocalDate.now();
+    private int maxMembri;
+    private StatoTeam stato = StatoTeam.ATTIVO;
+
+    private final List<Utente> membri = new ArrayList<>();
+
+    private final List<Invito> inviti = new ArrayList<>();
+    private Utente leader;
+
+    protected Team() { }
+
+    Team(String nomeTeam, String descrizione, int maxMembri) {
+        this.nomeTeam = nomeTeam;
+        this.descrizione = descrizione;
+        this.maxMembri = maxMembri;
+    }
+
+    boolean verificaDisponibilitaPosti() {
+        return stato != StatoTeam.ELIMINATO && membri.size() < maxMembri;
+    }
+
+    void aggiungiMembro(Utente membro) {
+        if (!verificaDisponibilitaPosti()) {
+            throw new TeamCompletoException("Team '" + nomeTeam + "' pieno o eliminato");
+        }
+        membri.add(membro);
+        membro.setTeam(this);
+        if (membri.size() == maxMembri) stato = StatoTeam.COMPLETO;
+    }
+
+    void rimuoviMembro(Utente membro) {
+        membri.remove(membro);
+        membro.setTeam(null);
+        membro.setRuolo(RuoloUtente.UTENTE);
+        if (membri.isEmpty()) stato = StatoTeam.ELIMINATO;
+        else if (stato == StatoTeam.COMPLETO) stato = StatoTeam.ATTIVO;
+    }
+
+    int contaMembri() { return membri.size(); }
+
+    void eliminaTeam() {
+        for (Utente m : new ArrayList<>(membri)) rimuoviMembro(m);
+        stato = StatoTeam.ELIMINATO;
+    }
+
+    UUID getIdTeam() { return idTeam; }
+    String getNomeTeam() { return nomeTeam; }
+    void setNomeTeam(String n) { this.nomeTeam = n; }
+    String getDescrizione() { return descrizione; }
+    void setDescrizione(String d) { this.descrizione = d; }
+    int getMaxMembri() { return maxMembri; }
+    StatoTeam getStato() { return stato; }
+    List<Utente> getMembri() { return List.copyOf(membri); }
+    List<Invito> getInviti() { return inviti; }
+    Utente getLeader() { return leader; }
+    void setLeader(Utente leader) { this.leader = leader; }
+
+    @Override public String toString() { return "Team(" + nomeTeam + ")"; }
+}
+
+
+
+
 
 
