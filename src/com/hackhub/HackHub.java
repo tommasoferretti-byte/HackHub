@@ -222,5 +222,45 @@ class ScadutoStato implements StatoInvito {
 }
 
 
+class Invito {
+    private UUID idInvito = UUID.randomUUID();
+    private StatoInvito stato = new InAttesaStato();
+    private LocalDate dataInvio = LocalDate.now();
+    private LocalDateTime dataScadenza;
+
+    private Utente mittente;
+    private Utente destinatario;
+    private Team team;
+
+    protected Invito() { }
+
+    Invito(Utente mittente, Utente destinatario, Team team, LocalDateTime dataScadenza) {
+        this.mittente = mittente;
+        this.destinatario = destinatario;
+        this.team = team;
+        this.dataScadenza = dataScadenza;
+    }
+
+
+    void accetta() { stato.accetta(this); }
+    void rifiuta() { stato.rifiuta(this); }
+
+    boolean verificaScadenza() { return LocalDateTime.now().isAfter(dataScadenza); }
+
+    UUID getIdInvito() { return idInvito; }
+    StatoInvito getStato() { return stato; }
+    void setStato(StatoInvito stato) { this.stato = stato; }
+    LocalDateTime getDataScadenza() { return dataScadenza; }
+    Utente getMittente() { return mittente; }
+    Utente getDestinatario() { return destinatario; }
+    Team getTeam() { return team; }
+
+    @Override public String toString() {
+        return "Invito(" + mittente + " -> " + destinatario + ", team " + team.getNomeTeam() + ")";
+    }
+}
+
+
+
 
 
