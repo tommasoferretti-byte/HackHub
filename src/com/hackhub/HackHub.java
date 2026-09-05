@@ -263,4 +263,37 @@ class Invito {
 
 
 
+class TeamService {
+
+    Team creaTeam(Utente creatore, String nome, String descrizione, int maxMembri) {
+        if (creatore.appartieneATeam()) {
+            throw new GiaInTeamException(creatore.getUsername() + " appartiene gia' a un team");
+        }
+        Team t = new Team(nome, descrizione, maxMembri);
+        t.setLeader(creatore);
+        t.aggiungiMembro(creatore);
+        creatore.setRuolo(RuoloUtente.TEAM_LEADER);
+        return t;
+    }
+
+    Invito invita(Team team, Utente mittente, Utente destinatario) {
+        if (mittente.getTeam() != team) {
+            throw new HackHubException("Solo un membro del team puo' invitare");
+        }
+        Invito invito = new Invito(mittente, destinatario, team,
+                LocalDateTime.now().plusDays(7));
+        team.getInviti().add(invito);
+        destinatario.aggiungiInvitoRicevuto(invito);
+        return invito;
+    }
+
+    void lasciaTeam(Utente utente) {
+        Team t = utente.getTeam();
+        if (t == null) throw new HackHubException(utente.getUsername() + " non appartiene a nessun team");
+        t.rimuoviMembro(utente);
+    }
+}
+
+
+
 
