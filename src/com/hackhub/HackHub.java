@@ -87,6 +87,39 @@ class Utente {
 }
 
 
+class MembroDelTeam extends Utente {
+    private LocalDate dataEntrataTeam = LocalDate.now();
+    protected MembroDelTeam() { }
+    MembroDelTeam(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+    LocalDate getDataEntrataTeam() { return dataEntrataTeam; }
+}
+
+class TeamLeader extends MembroDelTeam {
+    protected TeamLeader() { }
+    TeamLeader(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+}
+
+class MembroDelloStaff extends Utente {
+    protected MembroDelloStaff() { }
+    MembroDelloStaff(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+}
+
+class Organizzatore extends MembroDelloStaff {
+    protected Organizzatore() { }
+    Organizzatore(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+}
+
+class Giudice extends MembroDelloStaff {
+    protected Giudice() { }
+    Giudice(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+}
+
+class Mentore extends MembroDelloStaff {
+    protected Mentore() { }
+    Mentore(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
+}
+
+
 
 
 
