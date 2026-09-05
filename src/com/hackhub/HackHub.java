@@ -333,4 +333,17 @@ class InvitoService {
 
 
 
+class HackHubException extends RuntimeException {
+    HackHubException(String messaggio) { super(messaggio); }
+}
+class GiaInTeamException extends HackHubException {
+    GiaInTeamException(String m) { super(m); }
+}
+class TeamCompletoException extends HackHubException {
+    TeamCompletoException(String m) { super(m); }
+}
+class InvitoNonValidoException extends HackHubException {
+    InvitoNonValidoException(String m) { super(m); }
+}
+
 
