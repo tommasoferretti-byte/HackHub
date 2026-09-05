@@ -1,37 +1,45 @@
-/*
-Prima iterazione - HackHub
- */
 package com.hackhub;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
+
 
 public class HackHub {
 
     public static void main(String[] args) {
         TeamService team = new TeamService();
-        System.out.println("=== HackHub - Parte 2: team ===\n");
+        InvitoService inviti = new InvitoService();
+        System.out.println("=== HackHub - Parte 3: inviti + State ===\n");
 
         Utente alice = new Utente("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
         Utente bob   = new Utente("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
+        Utente carla = new Utente("carla", "carla@mail.it", "pw3", "Carla", "Neri");
 
         Team t = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
-        System.out.println("[Crea team] " + t + " | leader = " + t.getLeader().getUsername());
 
-        t.aggiungiMembro(bob);
-        System.out.println("Membri: " + t.contaMembri() + " -> " + t.getMembri());
 
-        team.lasciaTeam(bob);
-        System.out.println("[Lascia team] membri = " + t.getMembri());
+        Invito invito = team.invita(t, alice, bob);
+        System.out.println("[Invita] " + invito + " (stato = " + invito.getStato().nome() + ")");
+        inviti.accetta(invito);
+        System.out.println("[Accetta] stato = " + invito.getStato().nome()
+                + " | membri = " + t.getMembri());
+
+
+        Invito invito2 = team.invita(t, alice, carla);
+        inviti.rifiuta(invito2);
+        System.out.println("[Rifiuta] stato = " + invito2.getStato().nome());
     }
 }
+
 
 
 enum RuoloUtente { VISITATORE, UTENTE, MEMBRO_TEAM, TEAM_LEADER, ORGANIZZATORE, GIUDICE, MENTORE }
 
 enum StatoTeam { ATTIVO, COMPLETO, ELIMINATO }
+
 
 
 class Utente {
@@ -46,6 +54,8 @@ class Utente {
 
     private Team team;
 
+    private final List<Invito> invitiRicevuti = new ArrayList<>();
+
     protected Utente() { }
 
     Utente(String username, String email, String passwordHash, String nome, String cognome) {
@@ -58,6 +68,9 @@ class Utente {
 
     boolean isLibero() { return team == null; }
     boolean appartieneATeam() { return team != null; }
+
+    List<Invito> visualizzaInvitiRicevuti() { return List.copyOf(invitiRicevuti); }
+    void aggiungiInvitoRicevuto(Invito invito) { invitiRicevuti.add(invito); }
 
     UUID getIdUtente() { return idUtente; }
     String getUsername() { return username; }
@@ -72,6 +85,7 @@ class Utente {
 
     @Override public String toString() { return username; }
 }
+
 
 class MembroDelTeam extends Utente {
     private LocalDate dataEntrataTeam = LocalDate.now();
@@ -105,6 +119,8 @@ class Mentore extends MembroDelloStaff {
     Mentore(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
 }
 
+
+
 class Team {
     private UUID idTeam = UUID.randomUUID();
     private String nomeTeam;
@@ -115,6 +131,7 @@ class Team {
 
     private final List<Utente> membri = new ArrayList<>();
 
+    private final List<Invito> inviti = new ArrayList<>();
     private Utente leader;
 
     protected Team() { }
@@ -161,11 +178,90 @@ class Team {
     int getMaxMembri() { return maxMembri; }
     StatoTeam getStato() { return stato; }
     List<Utente> getMembri() { return List.copyOf(membri); }
+    List<Invito> getInviti() { return inviti; }
     Utente getLeader() { return leader; }
     void setLeader(Utente leader) { this.leader = leader; }
 
     @Override public String toString() { return "Team(" + nomeTeam + ")"; }
 }
+
+
+
+
+
+interface StatoInvito {
+    String nome();
+    void accetta(Invito invito);
+    void rifiuta(Invito invito);
+}
+
+
+class InAttesaStato implements StatoInvito {
+    public String nome() { return "IN_ATTESA"; }
+    public void accetta(Invito invito) { invito.setStato(new AccettatoStato()); }
+    public void rifiuta(Invito invito) { invito.setStato(new RifiutatoStato()); }
+}
+
+
+class AccettatoStato implements StatoInvito {
+    public String nome() { return "ACCETTATO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito gia' accettato"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito gia' accettato"); }
+}
+
+class RifiutatoStato implements StatoInvito {
+    public String nome() { return "RIFIUTATO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito gia' rifiutato"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito gia' rifiutato"); }
+}
+
+class ScadutoStato implements StatoInvito {
+    public String nome() { return "SCADUTO"; }
+    public void accetta(Invito i) { throw new InvitoNonValidoException("Invito scaduto"); }
+    public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito scaduto"); }
+}
+
+
+class Invito {
+    private UUID idInvito = UUID.randomUUID();
+    private StatoInvito stato = new InAttesaStato();
+    private LocalDate dataInvio = LocalDate.now();
+    private LocalDateTime dataScadenza;
+
+    private Utente mittente;
+    private Utente destinatario;
+    private Team team;
+
+    protected Invito() { }
+
+    Invito(Utente mittente, Utente destinatario, Team team, LocalDateTime dataScadenza) {
+        this.mittente = mittente;
+        this.destinatario = destinatario;
+        this.team = team;
+        this.dataScadenza = dataScadenza;
+    }
+
+
+    void accetta() { stato.accetta(this); }
+    void rifiuta() { stato.rifiuta(this); }
+
+    boolean verificaScadenza() { return LocalDateTime.now().isAfter(dataScadenza); }
+
+    UUID getIdInvito() { return idInvito; }
+    StatoInvito getStato() { return stato; }
+    void setStato(StatoInvito stato) { this.stato = stato; }
+    LocalDateTime getDataScadenza() { return dataScadenza; }
+    Utente getMittente() { return mittente; }
+    Utente getDestinatario() { return destinatario; }
+    Team getTeam() { return team; }
+
+    @Override public String toString() {
+        return "Invito(" + mittente + " -> " + destinatario + ", team " + team.getNomeTeam() + ")";
+    }
+}
+
+
+
 
 class TeamService {
 
@@ -180,12 +276,61 @@ class TeamService {
         return t;
     }
 
+    Invito invita(Team team, Utente mittente, Utente destinatario) {
+        if (mittente.getTeam() != team) {
+            throw new HackHubException("Solo un membro del team puo' invitare");
+        }
+        Invito invito = new Invito(mittente, destinatario, team,
+                LocalDateTime.now().plusDays(7));
+        team.getInviti().add(invito);
+        destinatario.aggiungiInvitoRicevuto(invito);
+        return invito;
+    }
+
     void lasciaTeam(Utente utente) {
         Team t = utente.getTeam();
         if (t == null) throw new HackHubException(utente.getUsername() + " non appartiene a nessun team");
         t.rimuoviMembro(utente);
     }
 }
+
+
+class InvitoService {
+
+    void accetta(Invito invito) {
+
+        if (invito.verificaScadenza()) {
+            invito.setStato(new ScadutoStato());
+            throw new InvitoNonValidoException("Invito scaduto");
+        }
+        Utente destinatario = invito.getDestinatario();
+        Team team = invito.getTeam();
+
+
+        if (!destinatario.isLibero()) {
+            throw new GiaInTeamException(destinatario.getUsername() + " appartiene gia' a un team");
+        }
+
+        if (!team.verificaDisponibilitaPosti()) {
+            throw new TeamCompletoException("Team '" + team.getNomeTeam() + "' completo");
+        }
+
+        invito.accetta();
+
+        team.aggiungiMembro(destinatario);
+        destinatario.setRuolo(RuoloUtente.MEMBRO_TEAM);
+    }
+
+    void rifiuta(Invito invito) {
+        if (invito.verificaScadenza()) {
+            invito.setStato(new ScadutoStato());
+            throw new InvitoNonValidoException("Invito scaduto");
+        }
+        invito.rifiuta();
+    }
+}
+
+
 
 
 class HackHubException extends RuntimeException {
@@ -197,3 +342,8 @@ class GiaInTeamException extends HackHubException {
 class TeamCompletoException extends HackHubException {
     TeamCompletoException(String m) { super(m); }
 }
+class InvitoNonValidoException extends HackHubException {
+    InvitoNonValidoException(String m) { super(m); }
+}
+
+
