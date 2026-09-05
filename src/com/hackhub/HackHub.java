@@ -295,5 +295,42 @@ class TeamService {
 }
 
 
+class InvitoService {
+
+    void accetta(Invito invito) {
+
+        if (invito.verificaScadenza()) {
+            invito.setStato(new ScadutoStato());
+            throw new InvitoNonValidoException("Invito scaduto");
+        }
+        Utente destinatario = invito.getDestinatario();
+        Team team = invito.getTeam();
+
+
+        if (!destinatario.isLibero()) {
+            throw new GiaInTeamException(destinatario.getUsername() + " appartiene gia' a un team");
+        }
+
+        if (!team.verificaDisponibilitaPosti()) {
+            throw new TeamCompletoException("Team '" + team.getNomeTeam() + "' completo");
+        }
+
+        invito.accetta();
+
+        team.aggiungiMembro(destinatario);
+        destinatario.setRuolo(RuoloUtente.MEMBRO_TEAM);
+    }
+
+    void rifiuta(Invito invito) {
+        if (invito.verificaScadenza()) {
+            invito.setStato(new ScadutoStato());
+            throw new InvitoNonValidoException("Invito scaduto");
+        }
+        invito.rifiuta();
+    }
+}
+
+
+
 
 
