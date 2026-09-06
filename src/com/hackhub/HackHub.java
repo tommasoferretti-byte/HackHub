@@ -309,8 +309,35 @@ class Hackathon {
     @Override public String toString() { return "Hackathon(" + nome + ")"; }
 }
 
+class Iscrizione {
+    private UUID idIscrizione = UUID.randomUUID();
+    private LocalDateTime dataIscrizione = LocalDateTime.now();
+    private StatoIscrizione stato = StatoIscrizione.IN_ATTESA;
+    private Team team;
+    private Hackathon hackathon;
 
+    protected Iscrizione() { }
 
+    Iscrizione(Team team, Hackathon hackathon) {
+        this.team = team;
+        this.hackathon = hackathon;
+    }
+
+    void conferma() { this.stato = StatoIscrizione.CONFERMATA; }
+
+    boolean verificaValidita() {
+        return !hackathon.verificaScadenzaIscrizioni() && team.getStato() != StatoTeam.ELIMINATO;
+    }
+
+    UUID getIdIscrizione() { return idIscrizione; }
+    StatoIscrizione getStato() { return stato; }
+    Team getTeam() { return team; }
+    Hackathon getHackathon() { return hackathon; }
+
+    @Override public String toString() {
+        return "Iscrizione(" + team.getNomeTeam() + " -> " + hackathon.getNome() + ")";
+    }
+}
 
 class TeamService {
 
