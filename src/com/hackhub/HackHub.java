@@ -406,8 +406,35 @@ class InvitoService {
     }
 }
 
+class HackathonService {
 
+    Hackathon creaHackathon(Organizzatore organizzatore, String nome, String regolamento,
+                            LocalDateTime scadenzaIscrizione, LocalDate dataInizio, LocalDate dataFine,
+                            String luogo, double premio, int dimensioneTeam, int maxTeam) {
+        Hackathon h = new Hackathon(nome, regolamento, scadenzaIscrizione, dataInizio, dataFine,
+                luogo, premio, dimensioneTeam, maxTeam);
+        h.setOrganizzatore(organizzatore);
+        h.setStato(StatoHackathon.APERTO);   // "in iscrizione"
+        return h;
+    }
 
+    Iscrizione iscriveTeam(Team team, Hackathon hackathon) {
+        if (hackathon.verificaScadenzaIscrizioni()) {
+            throw new HackHubException("Iscrizioni chiuse per '" + hackathon.getNome() + "'");
+        }
+        if (!hackathon.verificaDisponibilitaPosti()) {
+            throw new HackHubException("Numero massimo di team raggiunto");
+        }
+        if (team.contaMembri() > hackathon.getDimensioneTeam()) {
+            throw new HackHubException("Il team supera la dimensione massima consentita");
+        }
+        Iscrizione i = new Iscrizione(team, hackathon);
+        i.conferma();
+        hackathon.getIscrizioni().add(i);
+        team.getIscrizioni().add(i);
+        return i;
+    }
+}
 
 class HackHubException extends RuntimeException {
     HackHubException(String messaggio) { super(messaggio); }
