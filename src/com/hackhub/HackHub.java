@@ -260,6 +260,56 @@ class Invito {
     }
 }
 
+class Hackathon {
+    private UUID idHackathon = UUID.randomUUID();
+    private String nome;
+    private String regolamento;
+    private LocalDateTime scadenzaIscrizione;
+    private LocalDate dataInizio;
+    private LocalDate dataFine;
+    private String luogo;
+    private double premio;
+    private int dimensioneTeam;             // dimensione massima di un team
+    private int maxTeam;                     // numero massimo di team iscritti
+    private StatoHackathon stato = StatoHackathon.PIANIFICATO;
+
+    private final List<Iscrizione> iscrizioni = new ArrayList<>();
+    private Organizzatore organizzatore;
+
+    protected Hackathon() { }
+
+    Hackathon(String nome, String regolamento, LocalDateTime scadenzaIscrizione,
+              LocalDate dataInizio, LocalDate dataFine, String luogo,
+              double premio, int dimensioneTeam, int maxTeam) {
+        this.nome = nome;
+        this.regolamento = regolamento;
+        this.scadenzaIscrizione = scadenzaIscrizione;
+        this.dataInizio = dataInizio;
+        this.dataFine = dataFine;
+        this.luogo = luogo;
+        this.premio = premio;
+        this.dimensioneTeam = dimensioneTeam;
+        this.maxTeam = maxTeam;
+    }
+
+    boolean verificaScadenzaIscrizioni() { return LocalDateTime.now().isAfter(scadenzaIscrizione); }
+    boolean verificaDisponibilitaPosti() { return iscrizioni.size() < maxTeam; }
+    int getNumeroIscritti() { return iscrizioni.size(); }
+
+    UUID getIdHackathon() { return idHackathon; }
+    String getNome() { return nome; }
+    int getDimensioneTeam() { return dimensioneTeam; }
+    int getMaxTeam() { return maxTeam; }
+    StatoHackathon getStato() { return stato; }
+    void setStato(StatoHackathon stato) { this.stato = stato; }
+    List<Iscrizione> getIscrizioni() { return iscrizioni; }
+    Organizzatore getOrganizzatore() { return organizzatore; }
+    void setOrganizzatore(Organizzatore o) { this.organizzatore = o; }
+
+    @Override public String toString() { return "Hackathon(" + nome + ")"; }
+}
+
+
 
 
 class TeamService {
