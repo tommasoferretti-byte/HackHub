@@ -13,12 +13,11 @@ public class HackHub {
         TeamService team = new TeamService();
         InvitoService inviti = new InvitoService();
         HackathonService hackathon = new HackathonService();
-        System.out.println("=== HackHub - hackathon e iscrizioni ===\n");
+        System.out.println("=== HackHub - Parte 4: hackathon e iscrizioni ===\n");
 
         Utente alice = new Utente("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
         Utente bob   = new Utente("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
         Organizzatore org = new Organizzatore("org", "org@mail.it", "pw3", "Olga", "Verdi");
-
         org.setRuolo(RuoloUtente.ORGANIZZATORE);
 
         Team t = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
@@ -34,17 +33,16 @@ public class HackHub {
         Iscrizione iscr = hackathon.iscriveTeam(t, h);
         System.out.println("[Iscrive team] " + iscr + " (stato = " + iscr.getStato() + ")");
         System.out.println("Iscritti hackathon = " + h.getNumeroIscritti());
-
     }
 }
 
-
 enum RuoloUtente { VISITATORE, UTENTE, MEMBRO_TEAM, TEAM_LEADER, ORGANIZZATORE, GIUDICE, MENTORE }
+
 enum StatoTeam { ATTIVO, COMPLETO, ELIMINATO }
+
 enum StatoIscrizione { IN_ATTESA, CONFERMATA, RIFIUTATA, ANNULLATA }
+
 enum StatoHackathon { PIANIFICATO, APERTO, IN_CORSO, CHIUSO, ANNULLATO }
-
-
 
 class Utente {
     private UUID idUtente = UUID.randomUUID();
@@ -57,7 +55,6 @@ class Utente {
     private RuoloUtente ruolo = RuoloUtente.UTENTE;
 
     private Team team;
-
     private final List<Invito> invitiRicevuti = new ArrayList<>();
 
     protected Utente() { }
@@ -90,7 +87,6 @@ class Utente {
     @Override public String toString() { return username; }
 }
 
-
 class MembroDelTeam extends Utente {
     private LocalDate dataEntrataTeam = LocalDate.now();
     protected MembroDelTeam() { }
@@ -122,8 +118,6 @@ class Mentore extends MembroDelloStaff {
     protected Mentore() { }
     Mentore(String u, String e, String p, String n, String c) { super(u, e, p, n, c); }
 }
-
-
 
 class Team {
     private UUID idTeam = UUID.randomUUID();
@@ -183,6 +177,7 @@ class Team {
     StatoTeam getStato() { return stato; }
     List<Utente> getMembri() { return List.copyOf(membri); }
     List<Invito> getInviti() { return inviti; }
+    List<Iscrizione> getIscrizioni() { return iscrizioni; }
     Utente getLeader() { return leader; }
     void setLeader(Utente leader) { this.leader = leader; }
 
@@ -195,13 +190,11 @@ interface StatoInvito {
     void rifiuta(Invito invito);
 }
 
-
 class InAttesaStato implements StatoInvito {
     public String nome() { return "IN_ATTESA"; }
     public void accetta(Invito invito) { invito.setStato(new AccettatoStato()); }
     public void rifiuta(Invito invito) { invito.setStato(new RifiutatoStato()); }
 }
-
 
 class AccettatoStato implements StatoInvito {
     public String nome() { return "ACCETTATO"; }
@@ -221,7 +214,6 @@ class ScadutoStato implements StatoInvito {
     public void rifiuta(Invito i) { throw new InvitoNonValidoException("Invito scaduto"); }
 }
 
-
 class Invito {
     private UUID idInvito = UUID.randomUUID();
     private StatoInvito stato = new InAttesaStato();
@@ -240,7 +232,6 @@ class Invito {
         this.team = team;
         this.dataScadenza = dataScadenza;
     }
-
 
     void accetta() { stato.accetta(this); }
     void rifiuta() { stato.rifiuta(this); }
@@ -269,8 +260,8 @@ class Hackathon {
     private LocalDate dataFine;
     private String luogo;
     private double premio;
-    private int dimensioneTeam;             // dimensione massima di un team
-    private int maxTeam;                     // numero massimo di team iscritti
+    private int dimensioneTeam;
+    private int maxTeam;
     private StatoHackathon stato = StatoHackathon.PIANIFICATO;
 
     private final List<Iscrizione> iscrizioni = new ArrayList<>();
@@ -356,8 +347,7 @@ class TeamService {
         if (mittente.getTeam() != team) {
             throw new HackHubException("Solo un membro del team puo' invitare");
         }
-        Invito invito = new Invito(mittente, destinatario, team,
-                LocalDateTime.now().plusDays(7));
+        Invito invito = new Invito(mittente, destinatario, team, LocalDateTime.now().plusDays(7));
         team.getInviti().add(invito);
         destinatario.aggiungiInvitoRicevuto(invito);
         return invito;
@@ -370,29 +360,22 @@ class TeamService {
     }
 }
 
-
 class InvitoService {
 
     void accetta(Invito invito) {
-
         if (invito.verificaScadenza()) {
             invito.setStato(new ScadutoStato());
             throw new InvitoNonValidoException("Invito scaduto");
         }
         Utente destinatario = invito.getDestinatario();
         Team team = invito.getTeam();
-
-
         if (!destinatario.isLibero()) {
             throw new GiaInTeamException(destinatario.getUsername() + " appartiene gia' a un team");
         }
-
         if (!team.verificaDisponibilitaPosti()) {
             throw new TeamCompletoException("Team '" + team.getNomeTeam() + "' completo");
         }
-
         invito.accetta();
-
         team.aggiungiMembro(destinatario);
         destinatario.setRuolo(RuoloUtente.MEMBRO_TEAM);
     }
@@ -414,7 +397,7 @@ class HackathonService {
         Hackathon h = new Hackathon(nome, regolamento, scadenzaIscrizione, dataInizio, dataFine,
                 luogo, premio, dimensioneTeam, maxTeam);
         h.setOrganizzatore(organizzatore);
-        h.setStato(StatoHackathon.APERTO);   // "in iscrizione"
+        h.setStato(StatoHackathon.APERTO);
         return h;
     }
 
@@ -448,5 +431,3 @@ class TeamCompletoException extends HackHubException {
 class InvitoNonValidoException extends HackHubException {
     InvitoNonValidoException(String m) { super(m); }
 }
-
-
