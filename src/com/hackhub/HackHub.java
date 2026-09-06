@@ -12,33 +12,37 @@ public class HackHub {
     public static void main(String[] args) {
         TeamService team = new TeamService();
         InvitoService inviti = new InvitoService();
-        System.out.println("=== HackHub - Parte 3: inviti + State ===\n");
+        HackathonService hackathon = new HackathonService();
+        System.out.println("=== HackHub - hackathon e iscrizioni ===\n");
 
         Utente alice = new Utente("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
         Utente bob   = new Utente("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
-        Utente carla = new Utente("carla", "carla@mail.it", "pw3", "Carla", "Neri");
+        Organizzatore org = new Organizzatore("org", "org@mail.it", "pw3", "Olga", "Verdi");
+
+        org.setRuolo(RuoloUtente.ORGANIZZATORE);
 
         Team t = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
-
-
         Invito invito = team.invita(t, alice, bob);
-        System.out.println("[Invita] " + invito + " (stato = " + invito.getStato().nome() + ")");
         inviti.accetta(invito);
-        System.out.println("[Accetta] stato = " + invito.getStato().nome()
-                + " | membri = " + t.getMembri());
+        System.out.println("[Team] " + t + " -> membri " + t.getMembri());
 
+        Hackathon h = hackathon.creaHackathon(org, "AI Challenge", "Regolamento...",
+                LocalDateTime.now().plusDays(7), LocalDate.now().plusDays(10),
+                LocalDate.now().plusDays(12), "Milano", 1000.0, 4, 10);
+        System.out.println("[Crea hackathon] " + h + " (stato = " + h.getStato() + ")");
 
-        Invito invito2 = team.invita(t, alice, carla);
-        inviti.rifiuta(invito2);
-        System.out.println("[Rifiuta] stato = " + invito2.getStato().nome());
+        Iscrizione iscr = hackathon.iscriveTeam(t, h);
+        System.out.println("[Iscrive team] " + iscr + " (stato = " + iscr.getStato() + ")");
+        System.out.println("Iscritti hackathon = " + h.getNumeroIscritti());
+
     }
 }
 
 
-
 enum RuoloUtente { VISITATORE, UTENTE, MEMBRO_TEAM, TEAM_LEADER, ORGANIZZATORE, GIUDICE, MENTORE }
-
 enum StatoTeam { ATTIVO, COMPLETO, ELIMINATO }
+enum StatoIscrizione { IN_ATTESA, CONFERMATA, RIFIUTATA, ANNULLATA }
+enum StatoHackathon { PIANIFICATO, APERTO, IN_CORSO, CHIUSO, ANNULLATO }
 
 
 
@@ -130,8 +134,8 @@ class Team {
     private StatoTeam stato = StatoTeam.ATTIVO;
 
     private final List<Utente> membri = new ArrayList<>();
-
     private final List<Invito> inviti = new ArrayList<>();
+    private final List<Iscrizione> iscrizioni = new ArrayList<>();
     private Utente leader;
 
     protected Team() { }
@@ -184,10 +188,6 @@ class Team {
 
     @Override public String toString() { return "Team(" + nomeTeam + ")"; }
 }
-
-
-
-
 
 interface StatoInvito {
     String nome();
@@ -259,7 +259,6 @@ class Invito {
         return "Invito(" + mittente + " -> " + destinatario + ", team " + team.getNomeTeam() + ")";
     }
 }
-
 
 
 
