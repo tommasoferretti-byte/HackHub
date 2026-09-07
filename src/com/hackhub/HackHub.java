@@ -364,6 +364,8 @@ class UtenteService {
 }
 
 class TeamService {
+    private final Repository<Team> teams = new InMemoryRepository<>(Team::getIdTeam);
+    private final Repository<Invito> inviti = new InMemoryRepository<>(Invito::getIdInvito);
 
     Team creaTeam(Utente creatore, String nome, String descrizione, int maxMembri) {
         if (creatore.appartieneATeam()) {
@@ -373,7 +375,7 @@ class TeamService {
         t.setLeader(creatore);
         t.aggiungiMembro(creatore);
         creatore.setRuolo(RuoloUtente.TEAM_LEADER);
-        return t;
+        return teams.save(t);
     }
 
     Invito invita(Team team, Utente mittente, Utente destinatario) {
@@ -383,7 +385,7 @@ class TeamService {
         Invito invito = new Invito(mittente, destinatario, team, LocalDateTime.now().plusDays(7));
         team.getInviti().add(invito);
         destinatario.aggiungiInvitoRicevuto(invito);
-        return invito;
+        return inviti.save(invito);
     }
 
     void lasciaTeam(Utente utente) {
@@ -423,6 +425,8 @@ class InvitoService {
 }
 
 class HackathonService {
+    private final Repository<Hackathon> hackathons = new InMemoryRepository<>(Hackathon::getIdHackathon);
+    private final Repository<Iscrizione> iscrizioni = new InMemoryRepository<>(Iscrizione::getIdIscrizione);
 
     Hackathon creaHackathon(Organizzatore organizzatore, String nome, String regolamento,
                             LocalDateTime scadenzaIscrizione, LocalDate dataInizio, LocalDate dataFine,
@@ -431,7 +435,7 @@ class HackathonService {
                 luogo, premio, dimensioneTeam, maxTeam);
         h.setOrganizzatore(organizzatore);
         h.setStato(StatoHackathon.APERTO);
-        return h;
+        return hackathons.save(h);
     }
 
     Iscrizione iscriveTeam(Team team, Hackathon hackathon) {
@@ -448,7 +452,7 @@ class HackathonService {
         i.conferma();
         hackathon.getIscrizioni().add(i);
         team.getIscrizioni().add(i);
-        return i;
+        return iscrizioni.save(i);
     }
 }
 
