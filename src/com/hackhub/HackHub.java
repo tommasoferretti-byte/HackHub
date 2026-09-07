@@ -3,7 +3,10 @@ package com.hackhub;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 
@@ -328,6 +331,25 @@ class Iscrizione {
     @Override public String toString() {
         return "Iscrizione(" + team.getNomeTeam() + " -> " + hackathon.getNome() + ")";
     }
+}
+
+interface Repository<T> {
+    T save(T entity);
+    Optional<T> findById(UUID id);
+    List<T> findAll();
+}
+
+class InMemoryRepository<T> implements Repository<T> {
+    private final Map<UUID, T> store = new HashMap<>();
+    private final java.util.function.Function<T, UUID> idExtractor;
+
+    InMemoryRepository(java.util.function.Function<T, UUID> idExtractor) {
+        this.idExtractor = idExtractor;
+    }
+
+    public T save(T entity) { store.put(idExtractor.apply(entity), entity); return entity; }
+    public Optional<T> findById(UUID id) { return Optional.ofNullable(store.get(id)); }
+    public List<T> findAll() { return new ArrayList<>(store.values()); }
 }
 
 class TeamService {
