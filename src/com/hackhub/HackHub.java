@@ -352,6 +352,17 @@ class InMemoryRepository<T> implements Repository<T> {
     public List<T> findAll() { return new ArrayList<>(store.values()); }
 }
 
+class UtenteService {
+    private final Repository<Utente> utenti = new InMemoryRepository<>(Utente::getIdUtente);
+
+    Utente registra(String username, String email, String password, String nome, String cognome) {
+        Utente u = new Utente(username, email, password, nome, cognome);
+        return utenti.save(u);
+    }
+
+    Optional<Utente> trova(UUID id) { return utenti.findById(id); }
+}
+
 class TeamService {
 
     Team creaTeam(Utente creatore, String nome, String descrizione, int maxMembri) {
