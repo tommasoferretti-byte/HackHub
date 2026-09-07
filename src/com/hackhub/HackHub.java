@@ -13,29 +13,52 @@ import java.util.UUID;
 public class HackHub {
 
     public static void main(String[] args) {
+        // Istanzio i "service" (in Spring li inietterebbe il container).
+        UtenteService utenti = new UtenteService();
         TeamService team = new TeamService();
         InvitoService inviti = new InvitoService();
         HackathonService hackathon = new HackathonService();
-        System.out.println("=== HackHub - Parte 4: hackathon e iscrizioni ===\n");
 
-        Utente alice = new Utente("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
-        Utente bob   = new Utente("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
+        System.out.println("=== HackHub - demo prima iterazione ===\n");
+
+        Utente alice = utenti.registra("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
+        Utente bob   = utenti.registra("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
         Organizzatore org = new Organizzatore("org", "org@mail.it", "pw3", "Olga", "Verdi");
         org.setRuolo(RuoloUtente.ORGANIZZATORE);
+        System.out.println("[Utenti] creati: " + alice + ", " + bob + ", " + org + "\n");
 
-        Team t = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
-        Invito invito = team.invita(t, alice, bob);
+        Team teamAlice = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
+        System.out.println("[Crea team] " + teamAlice + " | leader = " + teamAlice.getLeader().getUsername() + "\n");
+
+        Invito invito = team.invita(teamAlice, alice, bob);
+        System.out.println("[Invita utente] " + invito + " (stato = " + invito.getStato().nome() + ")\n");
+
         inviti.accetta(invito);
-        System.out.println("[Team] " + t + " -> membri " + t.getMembri());
+        System.out.println("[Accetta invito] stato invito = " + invito.getStato().nome());
+        System.out.println("                 membri team  = " + teamAlice.contaMembri()
+                + " -> " + teamAlice.getMembri() + "\n");
+
+        Utente carla = utenti.registra("carla", "carla@mail.it", "pw4", "Carla", "Neri");
+        Invito invito2 = team.invita(teamAlice, alice, carla);
+        inviti.rifiuta(invito2);
+        System.out.println("[Rifiuta invito] stato invito = " + invito2.getStato().nome() + "\n");
 
         Hackathon h = hackathon.creaHackathon(org, "AI Challenge", "Regolamento...",
-                LocalDateTime.now().plusDays(7), LocalDate.now().plusDays(10),
-                LocalDate.now().plusDays(12), "Milano", 1000.0, 4, 10);
-        System.out.println("[Crea hackathon] " + h + " (stato = " + h.getStato() + ")");
+                LocalDateTime.now().plusDays(7),          // scadenza iscrizioni
+                LocalDate.now().plusDays(10),             // data inizio
+                LocalDate.now().plusDays(12),             // data fine
+                "Milano", 1000.0, 4, 10);                 // luogo, premio, dimensioneTeam, maxTeam
+        System.out.println("[Crea hackathon] " + h + " (stato = " + h.getStato() + ")\n");
 
-        Iscrizione iscr = hackathon.iscriveTeam(t, h);
+        Iscrizione iscr = hackathon.iscriveTeam(teamAlice, h);
         System.out.println("[Iscrive team] " + iscr + " (stato = " + iscr.getStato() + ")");
-        System.out.println("Iscritti hackathon = " + h.getNumeroIscritti());
+        System.out.println("               iscritti hackathon = " + h.getNumeroIscritti() + "\n");
+
+        team.lasciaTeam(bob);
+        System.out.println("[Lascia team] membri team = " + teamAlice.contaMembri()
+                + " -> " + teamAlice.getMembri());
+
+        System.out.println("\n=== fine demo ===");
     }
 }
 
