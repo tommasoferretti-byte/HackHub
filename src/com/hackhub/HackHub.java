@@ -3,36 +3,62 @@ package com.hackhub;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 
 public class HackHub {
 
     public static void main(String[] args) {
+        // Istanzio i "service" (in Spring li inietterebbe il container).
+        UtenteService utenti = new UtenteService();
         TeamService team = new TeamService();
         InvitoService inviti = new InvitoService();
         HackathonService hackathon = new HackathonService();
-        System.out.println("=== HackHub - Parte 4: hackathon e iscrizioni ===\n");
 
-        Utente alice = new Utente("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
-        Utente bob   = new Utente("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
+        System.out.println("=== HackHub - demo prima iterazione ===\n");
+
+        Utente alice = utenti.registra("alice", "alice@mail.it", "pw1", "Alice", "Rossi");
+        Utente bob   = utenti.registra("bob",   "bob@mail.it",   "pw2", "Bob",   "Bianchi");
         Organizzatore org = new Organizzatore("org", "org@mail.it", "pw3", "Olga", "Verdi");
         org.setRuolo(RuoloUtente.ORGANIZZATORE);
+        System.out.println("[Utenti] creati: " + alice + ", " + bob + ", " + org + "\n");
 
-        Team t = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
-        Invito invito = team.invita(t, alice, bob);
+        Team teamAlice = team.creaTeam(alice, "Byte Squad", "Team di prova", 4);
+        System.out.println("[Crea team] " + teamAlice + " | leader = " + teamAlice.getLeader().getUsername() + "\n");
+
+        Invito invito = team.invita(teamAlice, alice, bob);
+        System.out.println("[Invita utente] " + invito + " (stato = " + invito.getStato().nome() + ")\n");
+
         inviti.accetta(invito);
-        System.out.println("[Team] " + t + " -> membri " + t.getMembri());
+        System.out.println("[Accetta invito] stato invito = " + invito.getStato().nome());
+        System.out.println("                 membri team  = " + teamAlice.contaMembri()
+                + " -> " + teamAlice.getMembri() + "\n");
+
+        Utente carla = utenti.registra("carla", "carla@mail.it", "pw4", "Carla", "Neri");
+        Invito invito2 = team.invita(teamAlice, alice, carla);
+        inviti.rifiuta(invito2);
+        System.out.println("[Rifiuta invito] stato invito = " + invito2.getStato().nome() + "\n");
 
         Hackathon h = hackathon.creaHackathon(org, "AI Challenge", "Regolamento...",
-                LocalDateTime.now().plusDays(7), LocalDate.now().plusDays(10),
-                LocalDate.now().plusDays(12), "Milano", 1000.0, 4, 10);
-        System.out.println("[Crea hackathon] " + h + " (stato = " + h.getStato() + ")");
+                LocalDateTime.now().plusDays(7),          // scadenza iscrizioni
+                LocalDate.now().plusDays(10),             // data inizio
+                LocalDate.now().plusDays(12),             // data fine
+                "Milano", 1000.0, 4, 10);                 // luogo, premio, dimensioneTeam, maxTeam
+        System.out.println("[Crea hackathon] " + h + " (stato = " + h.getStato() + ")\n");
 
-        Iscrizione iscr = hackathon.iscriveTeam(t, h);
+        Iscrizione iscr = hackathon.iscriveTeam(teamAlice, h);
         System.out.println("[Iscrive team] " + iscr + " (stato = " + iscr.getStato() + ")");
-        System.out.println("Iscritti hackathon = " + h.getNumeroIscritti());
+        System.out.println("               iscritti hackathon = " + h.getNumeroIscritti() + "\n");
+
+        team.lasciaTeam(bob);
+        System.out.println("[Lascia team] membri team = " + teamAlice.contaMembri()
+                + " -> " + teamAlice.getMembri());
+
+        System.out.println("\n=== fine demo ===");
     }
 }
 
@@ -330,7 +356,39 @@ class Iscrizione {
     }
 }
 
+interface Repository<T> {
+    T save(T entity);
+    Optional<T> findById(UUID id);
+    List<T> findAll();
+}
+
+class InMemoryRepository<T> implements Repository<T> {
+    private final Map<UUID, T> store = new HashMap<>();
+    private final java.util.function.Function<T, UUID> idExtractor;
+
+    InMemoryRepository(java.util.function.Function<T, UUID> idExtractor) {
+        this.idExtractor = idExtractor;
+    }
+
+    public T save(T entity) { store.put(idExtractor.apply(entity), entity); return entity; }
+    public Optional<T> findById(UUID id) { return Optional.ofNullable(store.get(id)); }
+    public List<T> findAll() { return new ArrayList<>(store.values()); }
+}
+
+class UtenteService {
+    private final Repository<Utente> utenti = new InMemoryRepository<>(Utente::getIdUtente);
+
+    Utente registra(String username, String email, String password, String nome, String cognome) {
+        Utente u = new Utente(username, email, password, nome, cognome);
+        return utenti.save(u);
+    }
+
+    Optional<Utente> trova(UUID id) { return utenti.findById(id); }
+}
+
 class TeamService {
+    private final Repository<Team> teams = new InMemoryRepository<>(Team::getIdTeam);
+    private final Repository<Invito> inviti = new InMemoryRepository<>(Invito::getIdInvito);
 
     Team creaTeam(Utente creatore, String nome, String descrizione, int maxMembri) {
         if (creatore.appartieneATeam()) {
@@ -340,7 +398,7 @@ class TeamService {
         t.setLeader(creatore);
         t.aggiungiMembro(creatore);
         creatore.setRuolo(RuoloUtente.TEAM_LEADER);
-        return t;
+        return teams.save(t);
     }
 
     Invito invita(Team team, Utente mittente, Utente destinatario) {
@@ -350,7 +408,7 @@ class TeamService {
         Invito invito = new Invito(mittente, destinatario, team, LocalDateTime.now().plusDays(7));
         team.getInviti().add(invito);
         destinatario.aggiungiInvitoRicevuto(invito);
-        return invito;
+        return inviti.save(invito);
     }
 
     void lasciaTeam(Utente utente) {
@@ -390,6 +448,8 @@ class InvitoService {
 }
 
 class HackathonService {
+    private final Repository<Hackathon> hackathons = new InMemoryRepository<>(Hackathon::getIdHackathon);
+    private final Repository<Iscrizione> iscrizioni = new InMemoryRepository<>(Iscrizione::getIdIscrizione);
 
     Hackathon creaHackathon(Organizzatore organizzatore, String nome, String regolamento,
                             LocalDateTime scadenzaIscrizione, LocalDate dataInizio, LocalDate dataFine,
@@ -398,7 +458,7 @@ class HackathonService {
                 luogo, premio, dimensioneTeam, maxTeam);
         h.setOrganizzatore(organizzatore);
         h.setStato(StatoHackathon.APERTO);
-        return h;
+        return hackathons.save(h);
     }
 
     Iscrizione iscriveTeam(Team team, Hackathon hackathon) {
@@ -415,7 +475,7 @@ class HackathonService {
         i.conferma();
         hackathon.getIscrizioni().add(i);
         team.getIscrizioni().add(i);
-        return i;
+        return iscrizioni.save(i);
     }
 }
 
